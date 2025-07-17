@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Movie Night Picker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="overlay">
+    <div class="container py-5">
+      <h1 class="text-center mb-4 text-light">🎬 Movie Night Picker</h1>
+
+      <!-- Genre Picker (Optional Original Feature) -->
+      <div class="row mb-4 justify-content-center">
+        <div class="col-md-6">
+          <select id="genreSelect" class="form-select">
+            <option value="" disabled selected>Select a Genre</option>
+            <option value="Action">Action</option>
+            <option value="Comedy">Comedy</option>
+            <option value="Horror">Horror</option>
+            <option value="Romance">Romance</option>
+            <option value="Sci-Fi">Sci-Fi</option>
+            <option value="Drama">Drama</option>
+            <option value="Anime">Anime</option> <!-- ✅ Added Anime -->
+          </select>
+        </div>
+      </div>
+
+      <div class="text-center mb-4">
+        <button id="pickMovieBtn" class="btn btn-primary">Pick a Movie</button>
+      </div>
+
+      <!-- Movie Output Card -->
+      <div id="movieCard" class="row justify-content-center mb-5"></div>
+
+      <hr class="text-light">
+
+      <!-- Custom Movie Wheel Section -->
+      <h3 class="text-center text-light">🎡 Spin the Wheel — Custom Picks</h3>
+      <p class="text-center text-light">Enter one movie at a time (max 6), press Enter each time.</p>
+
+      <div class="row justify-content-center mb-3">
+        <div class="col-md-6">
+          <input id="movieInput" class="form-control" placeholder="Type movie title and press Enter" />
+        </div>
+      </div>
+
+      <div class="row justify-content-center">
+        <div class="col-md-6">
+          <ul id="movieList" class="list-group mb-3"></ul>
+        </div>
+      </div>
+
+      <div class="text-center mb-4 d-flex justify-content-center gap-3 flex-wrap">
+        <button id="spinWheelBtn" class="btn btn-warning" disabled>Spin the Wheel 🎡</button>
+        <button id="resetListBtn" class="btn btn-outline-light">Reset List</button>
+      </div>
+
+      <div class="wheel-container text-center my-5">
+        <div class="wheel-wrapper position-relative d-inline-block">
+          <div id="wheel" class="wheel"></div>
+          <div class="arrow">▲</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
