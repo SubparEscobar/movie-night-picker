@@ -1,5 +1,6 @@
-const API_KEY = "0cd9b04d7a922f8f59e30505a8f023b2"; // Replace with your TMDb API key
+const API_KEY = TMDB_API_KEY; // Key is accessed through config.js
 const BASE_URL = "https://api.themoviedb.org/3";
+
 const genreSelect = document.getElementById("genreSelect");
 const pickMovieBtn = document.getElementById("pickMovieBtn");
 const movieCard = document.getElementById("movieCard");
@@ -9,18 +10,22 @@ const movieListEl = document.getElementById("movieList");
 const spinWheelBtn = document.getElementById("spinWheelBtn");
 const resetListBtn = document.getElementById("resetListBtn");
 const wheel = document.getElementById("wheel");
+const viewWatchlistBtn = document.getElementById("viewWatchlistBtn");
 
 let customMovies = [];
+
+// ===== New state variable for toggle =====
+let watchlistOpen = false;
 
 // TMDB genre ID map
 const genreMap = {
   Action: 28,
+  Anime: 16,
   Comedy: 35,
   Horror: 27,
   Romance: 10749,
   "Sci-Fi": 878,
   Drama: 18,
-  Anime: 16
 };
 
 // 🎲 Pick random TMDB movie by genre
@@ -141,22 +146,132 @@ function displayTMDBMovie(movie) {
   const youtubeSearchURL = `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + ' trailer')}`;
 
   movieCard.innerHTML = `
-    <div class="col-md-8">
-      <div class="card shadow mb-4">
-        <div class="row g-0">
-          <div class="col-md-4">
-            <img src="${poster}" class="img-fluid rounded-start" alt="${movie.title} Poster">
-          </div>
-          <div class="col-md-8">
-            <div class="card-body">
-              <h5 class="card-title">${movie.title} (${movie.release_date?.slice(0, 4) || "N/A"})</h5>
-              <p class="card-text">${movie.overview || "No plot available."}</p>
-              <p class="card-text"><small class="text-muted">TMDB Rating: ${movie.vote_average}</small></p>
-              <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger mt-2">▶️ Watch Trailer on YouTube</a>
-            </div>
+  <div class="col-md-8">
+    <div class="card shadow mb-4">
+      <div class="row g-0">
+        <div class="col-md-4">
+          <img src="${poster}" class="img-fluid rounded-start" alt="${movie.title} Poster">
+        </div>
+        <div class="col-md-8">
+          <div class="card-body">
+            <h5 class="card-title">${movie.title} (${movie.release_date?.slice(0, 4) || "N/A"})</h5>
+            <p class="card-text">${movie.overview || "No plot available."}</p>
+            <p class="card-text"><small style="color: white;">TMDB Rating: ${movie.vote_average}</small></p>
+            <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger mt-2 me-2">▶️ Watch Trailer on YouTube</a>
+            <button id="addToWatchlistBtn" class="btn btn-outline-primary mt-2">➕ Add to Watchlist</button>
           </div>
         </div>
       </div>
     </div>
-  `;
+  </div>
+`;
+
+  document.getElementById("addToWatchlistBtn").addEventListener("click", () => {
+    const movieToAdd = {
+      imdbID: movie.id.toString(),
+      Title: movie.title,
+      Year: movie.release_date?.slice(0, 4) || "N/A",
+      Poster: poster,
+      Genre: "N/A",
+      Plot: movie.overview || "No plot available.",
+      imdbRating: movie.vote_average || "N/A",
+    };
+    addToWatchlist(movieToAdd);
+  });
+}
+
+// Dynamically update wheel background
+function updateWheelBackground() {
+  const colors = [
+    "#f44336", "#e91e63", "#9c27b0", "#3f51b5", "#2196f3", "#009688",
+    "#4caf50", "#8bc34a", "#ffeb3b", "#ff9800", "#ff5722", "#795548"
+  ];
+
+  const segments = customMovies.length;
+  const anglePer = 360 / segments;
+  let gradient = "";
+
+  for (let i = 0; i < segments; i++) {
+    const start = i * anglePer;
+    const end = start + anglePer;
+    const color = colors[i % colors.length];
+    gradient += `${color} ${start}deg ${end}deg${i < segments - 1 ? ', ' : ''}`;
+  }
+
+  wheel.style.background = `conic-gradient(${gradient})`;
+}
+
+// Add to watchlist
+function addToWatchlist(movie) {
+  let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+
+  const exists = watchlist.some(m => m.imdbID === movie.imdbID);
+  if (exists) {
+    alert("This movie is already in your watchlist!");
+    return;
+  }
+
+  watchlist.push(movie);
+  localStorage.setItem("watchlist", JSON.stringify(watchlist));
+  alert(`Added "${movie.Title}" to your watchlist!`);
+}
+
+// ===== Toggleable View Watchlist =====
+document.getElementById("viewWatchlistBtn").addEventListener("click", () => {
+  // Toggle state
+  watchlistOpen = !watchlistOpen;
+
+  if (watchlistOpen) {
+    // Show watchlist
+    const watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+
+    if (watchlist.length === 0) {
+      movieCard.innerHTML = '<p class="text-center">Your watchlist is empty!</p>';
+    } else {
+      movieCard.innerHTML = "";
+      watchlist.forEach(movie => {
+        const youtubeSearchURL = `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.Title + ' trailer')}`;
+       
+        movieCard.innerHTML += `
+          <div class="card shadow mb-4">
+            <div class="row g-0">
+              <div class="col-md-4">
+                <img src="${movie.Poster !== "N/A" ? movie.Poster : 'https://via.placeholder.com/300x450?text=No+Image'}" class="img-fluid rounded-start" alt="${movie.Title} Poster">
+              </div>
+              <div class="col-md-8">
+                <div class="card-body">
+                  <h5 class="card-title">${movie.Title} (${movie.Year})</h5>
+                  <p class="card-text"><strong>Genre:</strong> ${movie.Genre}</p>
+                  <p class="card-text"><strong>Plot:</strong> ${movie.Plot}</p>
+                  <p class="card-text"><small class="text-muted">IMDb Rating: ${movie.imdbRating}</small></p>
+                  <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger me-2 mt-2">▶️ Trailer</a>
+                  <button class="btn btn-outline-danger mt-2" onclick='removeFromWatchlist("${movie.imdbID}")'>🗑️ Remove</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Change button text to close
+    viewWatchlistBtn.textContent = "❌ Close Watchlist";
+  } else {
+    // Hide watchlist (clear movieCard area)
+    movieCard.innerHTML = "";
+    viewWatchlistBtn.textContent = "📺 View Watchlist";
+  }
+});
+
+// Remove from watchlist
+function removeFromWatchlist(imdbID) {
+  let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+  watchlist = watchlist.filter(m => m.imdbID !== imdbID);
+  localStorage.setItem("watchlist", JSON.stringify(watchlist));
+
+  // Refresh watchlist if currently open
+  if (watchlistOpen) {
+    document.getElementById("viewWatchlistBtn").click();
+    document.getElementById("viewWatchlistBtn").click();
+  }
 }
