@@ -10,7 +10,7 @@
 <body>
   <div class="overlay">
     <div class="container py-5">
-      <h1 class="text-center mb-4 text-light">🎬 Movie Night Picker</h1>
+      <h1 class="text-center mb-4 text-light">🎬 Random Movie Night Picker</h1>
 
       <div class="text-center mb-4">
         <button id="viewWatchlistBtn" class="btn btn-outline-light">📺 View Watchlist</button>
@@ -22,7 +22,7 @@
         <ul id="watchlistItems" class="list-group"></ul>
       </div>
 
-      <!-- Genre Picker (Optional Original Feature) -->
+      <!-- Genre Picker -->
       <div class="row mb-4 justify-content-center">
         <div class="col-md-6">
           <select id="genreSelect" class="form-select">
@@ -70,7 +70,10 @@
 
       <div class="wheel-container text-center my-5">
         <div class="wheel-wrapper position-relative d-inline-block">
-          <div id="wheel" class="wheel"></div>
+          <!-- Wheel with labels -->
+          <div id="wheel" class="wheel">
+            <div id="wheelLabels" class="wheel-labels"></div>
+          </div>
           <div class="arrow">▲</div>
         </div>
       </div>

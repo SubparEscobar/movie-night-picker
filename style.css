@@ -18,7 +18,10 @@ button:hover {
   min-height: 100vh;
   padding: 2rem;
 }
-.text-light { color: #fff; }
+
+.text-light { 
+  color: #fff; 
+}
 
 /* Movie card */
 #movieCard .card {
@@ -32,7 +35,9 @@ button:hover {
 .wheel-wrapper {
   width: 300px;
   height: 300px;
+  position: relative;
 }
+
 #wheel {
   width: 100%;
   height: 100%;
@@ -49,6 +54,8 @@ button:hover {
   );
   transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1);
 }
+
+/* Arrow indicator */
 .arrow {
   position: absolute;
   top: -25px;
@@ -57,16 +64,19 @@ button:hover {
   font-size: 2rem;
   color: yellow;
 }
+
+/* Disable clicks during spin */
 body.spinning {
   pointer-events: none;
   user-select: none;
 }
+
 #movieList li {
   background-color: rgba(255, 255, 255, 0.1);
   color: white;
 }
 
-/* Watchlist movie card spacing*/
+/* Watchlist movie card spacing */
 #movieCard .card:not(:last-child) {
   margin-bottom: 1.5rem;
 }
@@ -89,4 +99,39 @@ body.spinning {
   font-size: 1.5rem;
   margin-bottom: 1rem;
   color: #ffeb3b;
+}
+
+/* ===== Dynamic Wheel Labels ===== */
+.wheel-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.wheel-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+}
+
+/* Fade animation */
+.fade-in {
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in.show {
+  opacity: 1;
+  transform: scale(1);
 }
