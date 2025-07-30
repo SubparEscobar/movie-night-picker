@@ -10,13 +10,12 @@ const movieListEl = document.getElementById("movieList");
 const spinWheelBtn = document.getElementById("spinWheelBtn");
 const resetListBtn = document.getElementById("resetListBtn");
 const wheel = document.getElementById("wheel");
-const wheelLabels = document.getElementById("wheelLabels");
-const viewWatchlistBtn = document.getElementById("viewWatchlistBtn");
 
 let customMovies = [];
 let watchlistOpen = false;
+let favoritesOpen = false;
 
-// TMDB genre ID map
+// TMDB Genre ID map
 const genreMap = {
   Action: 28,
   Anime: 16,
@@ -63,7 +62,7 @@ pickMovieBtn.addEventListener("click", async () => {
 });
 
 // ==========================
-// Add custom movies
+// Add custom movies manually
 // ==========================
 movieInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
@@ -85,7 +84,6 @@ movieInput.addEventListener("keypress", (e) => {
     movieInput.value = "";
 
     spinWheelBtn.disabled = customMovies.length < 2;
-
     updateWheelBackground();
   }
 });
@@ -102,20 +100,22 @@ spinWheelBtn.addEventListener("click", () => {
   }
 
   const segmentAngle = 360 / segments;
-  const selectedIndex = Math.floor(Math.random() * segments);
-  const selectedMovie = customMovies[selectedIndex];
-
-  const extraSpins = Math.floor(Math.random() * 3 + 3) * 360; // 3–5 spins
-  const offset = 360 - (selectedIndex * segmentAngle + segmentAngle / 2);
-  const finalAngle = extraSpins + offset;
+  const extraSpins = Math.floor(Math.random() * 3 + 3) * 360;
+  const randomAngle = Math.random() * 360;
+  const finalAngle = extraSpins + randomAngle;
 
   wheel.style.transition = "none";
   wheel.style.transform = "rotate(0deg)";
-  void wheel.offsetWidth; // reflow
+  void wheel.offsetWidth;
   wheel.style.transition = "transform 4s cubic-bezier(0.33, 1, 0.68, 1)";
   wheel.style.transform = `rotate(${finalAngle}deg)`;
 
   setTimeout(() => {
+    const endAngle = finalAngle % 360;
+    const normalizedAngle = (360 - endAngle + 90) % 360;
+    const winnerIndex = Math.floor(normalizedAngle / segmentAngle) % segments;
+
+    const selectedMovie = customMovies[winnerIndex];
     fetchAndDisplayMovieByTitle(selectedMovie);
   }, 4000);
 });
@@ -135,7 +135,7 @@ resetListBtn.addEventListener("click", () => {
 });
 
 // ==========================
-// Update wheel colors & labels
+// Update wheel colors
 // ==========================
 function updateWheelBackground() {
   const colors = [
@@ -144,7 +144,6 @@ function updateWheelBackground() {
   ];
 
   const segments = customMovies.length;
-  wheelLabels.innerHTML = "";
 
   if (segments === 0) {
     wheel.style.background = "rgba(255,255,255,0.1)";
@@ -154,37 +153,24 @@ function updateWheelBackground() {
   const anglePer = 360 / segments;
   let gradient = "";
 
-  const radius = wheel.offsetWidth / 2 - 60; // dynamic distance from center
-
   for (let i = 0; i < segments; i++) {
     const start = i * anglePer;
     const end = start + anglePer;
     const color = colors[i % colors.length];
     gradient += `${color} ${start}deg ${end}deg${i < segments - 1 ? ", " : ""}`;
-
-    const label = document.createElement("div");
-    label.className = "wheel-label";
-
-    // Truncate long titles
-    const maxLabelLength = 12;
-    label.textContent =
-      customMovies[i].length > maxLabelLength
-        ? customMovies[i].slice(0, maxLabelLength) + "…"
-        : customMovies[i];
-
-    // Rotate outward and align with slice (classic wheel)
-    const rotateAngle = start + anglePer / 2;
-    label.style.transform = `rotate(${rotateAngle}deg) translate(${radius}px) translate(-50%, -50%)`;
-
-
-    wheelLabels.appendChild(label);
   }
 
   wheel.style.background = `conic-gradient(${gradient})`;
 }
 
+window.addEventListener("resize", () => {
+  if (customMovies.length > 0) {
+    updateWheelBackground();
+  }
+});
+
 // ==========================
-// Fetch by title fallback
+// Fetch by title
 // ==========================
 function fetchAndDisplayMovieByTitle(title) {
   fetch(`${BASE_URL}/search/movie?api_key=${API_KEY}&query=${encodeURIComponent(title)}&language=en-US`)
@@ -203,6 +189,36 @@ function fetchAndDisplayMovieByTitle(title) {
 }
 
 // ==========================
+// Add Movie to Wheel
+// ==========================
+function addMovieToWheel(title) {
+  const trimmedTitle = title.trim();
+  if (!trimmedTitle) return;
+
+  if (customMovies.includes(trimmedTitle)) {
+    alert("This movie is already on the wheel!");
+    return;
+  }
+
+  if (customMovies.length >= 12) {
+    alert("You’ve reached the maximum of 12 movies on the wheel.");
+    return;
+  }
+
+  customMovies.push(trimmedTitle);
+
+  const li = document.createElement("li");
+  li.className = "list-group-item";
+  li.textContent = trimmedTitle;
+  movieListEl.appendChild(li);
+
+  spinWheelBtn.disabled = customMovies.length < 2;
+  updateWheelBackground();
+
+  alert(`"${trimmedTitle}" has been added to the spinner wheel!`);
+}
+
+// ==========================
 // Display TMDB movie
 // ==========================
 function displayTMDBMovie(movie) {
@@ -212,14 +228,11 @@ function displayTMDBMovie(movie) {
 
   const youtubeSearchURL = `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " trailer")}`;
 
-  // Clear previous card
   movieCard.innerHTML = "";
 
-  // Create new card element
   const cardWrapper = document.createElement("div");
   cardWrapper.className = "d-flex justify-content-center fade-in";
 
-  // Inner card HTML
   cardWrapper.innerHTML = `
   <div class="card shadow mb-4" style="max-width: 700px; width: 100%; background-color: rgba(0, 0, 0, 0.85); color: white;">
     <div class="d-flex flex-column flex-md-row align-items-center align-items-md-start p-3">
@@ -230,12 +243,13 @@ function displayTMDBMovie(movie) {
         <p class="card-text"><small style="color: white;">TMDB Rating: ${movie.vote_average}</small></p>
         <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger mt-2 me-2">▶️ Watch Trailer on YouTube</a>
         <button id="addToWatchlistBtn" class="btn btn-outline-primary mt-2">➕ Add to Watchlist</button>
+        <button id="addToFavoritesBtn" class="btn btn-outline-primary mt-2">❤️ Add to Favorites</button>
+        <button class="btn btn-outline-warning mt-2 ms-2" onclick='addMovieToWheel("${movie.title}")'>🎡 Add to Wheel</button>
       </div>
     </div>
   </div>
   `;
 
-  // Append and animate
   movieCard.appendChild(cardWrapper);
   setTimeout(() => cardWrapper.classList.add("show"), 50);
 
@@ -250,6 +264,19 @@ function displayTMDBMovie(movie) {
       imdbRating: movie.vote_average || "N/A",
     };
     addToWatchlist(movieToAdd);
+  });
+
+  document.getElementById("addToFavoritesBtn").addEventListener("click", () => {
+    const movieToAdd = {
+      imdbID: movie.id.toString(),
+      Title: movie.title,
+      Year: movie.release_date?.slice(0, 4) || "N/A",
+      Poster: poster,
+      Genre: "N/A",
+      Plot: movie.overview || "No plot available.",
+      imdbRating: movie.vote_average || "N/A",
+    };
+    addToFavorites(movieToAdd);
   });
 }
 
@@ -302,6 +329,7 @@ document.getElementById("viewWatchlistBtn").addEventListener("click", () => {
                   <p class="card-text"><small class="text-muted">IMDb Rating: ${movie.imdbRating}</small></p>
                   <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger me-2 mt-2">▶️ Trailer</a>
                   <button class="btn btn-outline-danger mt-2" onclick='removeFromWatchlist("${movie.imdbID}")'>🗑️ Remove</button>
+                  <button class="btn btn-outline-warning mt-2" onclick='addMovieToWheel("${movie.Title}")'>🎡 Add to Wheel</button>
                 </div>
               </div>
             </div>
@@ -324,9 +352,109 @@ function removeFromWatchlist(imdbID) {
   let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
   watchlist = watchlist.filter((m) => m.imdbID !== imdbID);
   localStorage.setItem("watchlist", JSON.stringify(watchlist));
+  alert("Removed from watchlist!");
 
   if (watchlistOpen) {
     document.getElementById("viewWatchlistBtn").click();
     document.getElementById("viewWatchlistBtn").click();
   }
 }
+
+// ==========================
+// Add to favorites
+// ==========================
+function addToFavorites(movie) {
+  let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+
+  const exists = favorites.some((m) => m.imdbID === movie.imdbID);
+  if (exists) {
+    alert("This movie is already in your favorites!");
+    return;
+  }
+
+  favorites.push(movie);
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+  alert(`Added "${movie.Title}" to your favorites!`);
+}
+
+// ==========================
+// Toggle favorites view
+// ==========================
+document.getElementById("viewFavoritesBtn").addEventListener("click", () => {
+  favoritesOpen = !favoritesOpen;
+
+  if (favoritesOpen) {
+    const favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+
+    if (favorites.length === 0) {
+      movieCard.innerHTML = '<p class="text-center">Your favorites is empty!</p>';
+    } else {
+      movieCard.innerHTML = "";
+      favorites.forEach((movie) => {
+        const youtubeSearchURL = `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.Title + " trailer")}`;
+
+        movieCard.innerHTML += `
+          <div class="card shadow mb-4">
+            <div class="row g-0">
+              <div class="col-md-4">
+                <img src="${
+                  movie.Poster !== "N/A" ? movie.Poster : "https://via.placeholder.com/300x450?text=No+Image"
+                }" class="img-fluid rounded-start" alt="${movie.Title} Poster">
+              </div>
+              <div class="col-md-8">
+                <div class="card-body">
+                  <h5 class="card-title">${movie.Title} (${movie.Year})</h5>
+                  <p class="card-text"><strong>Genre:</strong> ${movie.Genre}</p>
+                  <p class="card-text"><strong>Plot:</strong> ${movie.Plot}</p>
+                  <p class="card-text"><small class="text-muted">IMDb Rating: ${movie.imdbRating}</small></p>
+                  <a href="${youtubeSearchURL}" target="_blank" class="btn btn-danger me-2 mt-2">▶️ Trailer</a>
+                  <button class="btn btn-outline-danger mt-2" onclick='removeFromFavorites("${movie.imdbID}")'>🗑️ Remove</button>
+                  <button class="btn btn-outline-warning mt-2" onclick='addMovieToWheel("${movie.Title}")'>🎡 Add to Wheel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    viewFavoritesBtn.textContent = "❌ Close Favorites";
+  } else {
+    movieCard.innerHTML = "";
+    viewFavoritesBtn.textContent = "❤️ View Favorites";
+  }
+});
+
+// ==========================
+// Remove from favorites
+// ==========================
+function removeFromFavorites(imdbID) {
+  let favorites = JSON.parse(localStorage.getItem("favorites")) || [];
+  favorites = favorites.filter((m) => m.imdbID !== imdbID);
+  localStorage.setItem("favorites", JSON.stringify(favorites));
+  alert("Removed from favorites!");
+
+  if (favoritesOpen) {
+    document.getElementById("viewFavoritesBtn").click();
+    document.getElementById("viewFavoritesBtn").click();
+  }
+}
+
+// ==========================
+// Login Modal Logic
+// ==========================
+document.getElementById("loginForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+
+  // Simple validation or simulation
+  if (username && password) {
+    alert(`Welcome, ${username}!`);
+    const modal = bootstrap.Modal.getInstance(document.getElementById("loginModal"));
+    modal.hide();
+  } else {
+    alert("Please enter valid credentials.");
+  }
+});
